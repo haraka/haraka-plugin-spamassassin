@@ -1,79 +1,192 @@
-[![Unix Build Status][ci-img]][ci-url]
-[![Windows Build Status][ci-win-img]][ci-win-url]
+[![CI Test Status][ci-img]][ci-url]
 [![Code Climate][clim-img]][clim-url]
+
 [![NPM][npm-img]][npm-url]
 
-# haraka-plugin-template
+# haraka-plugin-spamassassin
 
-Clone me, to create a new plugin!
+This plugin implements the spamd protocol and will send messages to spamd for scoring.
 
-# Template Instructions
+## Configuration
 
-These instructions will not self-destruct after use. Use and destroy.
-
-See also, [How to Write a Plugin](https://github.com/haraka/Haraka/wiki/Write-a-Plugin) and [Plugins.md](https://github.com/haraka/Haraka/blob/master/docs/Plugins.md) for additional plugin writing information.
-
-## Create a new repo for your plugin
-
-Haraka plugins are named like `haraka-plugin-something`. All the namespace after `haraka-plugin-` is yours for the taking. Please check the [Plugins](https://github.com/haraka/Haraka/blob/master/Plugins.md) page and a Google search to see what plugins already exist.
-
-Once you've settled on a name, create the GitHub repo. On the repo's main page, click the _Clone or download_ button and copy the URL. Then paste that URL into a local ENV variable with a command like this:
-
-```sh
-export MY_GITHUB_ORG=haraka
-export MY_PLUGIN_NAME=haraka-plugin-SOMETHING
+```
+cp node_modules/haraka-plugin-spamassassin/config/spamassassin.ini config/spamassassin.ini
+$EDITOR config/spamassassin.ini
 ```
 
-Clone and rename the template repo:
+spamassassin.ini
 
-```sh
-git clone git@github.com:haraka/haraka-plugin-template.git
-mv haraka-plugin-template $MY_PLUGIN_NAME
-cd $MY_PLUGIN_NAME
-git remote rm origin
-git remote add origin "git@github.com:$MY_GITHUB_ORG/$MY_PLUGIN_NAME.git"
-```
+- spamd_socket = \[host:port | /path/to/socket\] _optional_
 
-Now you'll have a local git repo to begin authoring your plugin
+  Default: localhost:783
 
-## rename boilerplate
+  Host or path to socket where spamd is running.
 
-Replaces all uses of the word `template` with your plugin's name.
+- spamd_user = \[user\] _optional_
 
-./redress.sh [something]
+  Default: default
 
-You'll then be prompted to update package.json and then force push this repo onto the GitHub repo you've created earlier.
+  Username to pass to spamd. This is useful when you are running
+  spamd with virtual users.
 
+  You can also pass this value in dynamically by setting:
 
-# Add your content here
+  1. `connection.transaction.notes.spamd_user` in another plugin.
 
-## INSTALL
+  2. The special username: _first-recipient_. The first envelope recipient
+     will be used as the username.
 
-```sh
-cd /path/to/local/haraka
-npm install haraka-plugin-template
-echo "template" >> config/plugins
-service haraka restart
-```
+  3. the special username _all-recipients_ may eventually be supported. See
+     the get_spamd_username function in the plugin.
 
-### Configuration
+- max_size = N _optional_
 
-If the default configuration is not sufficient, copy the config file from the distribution into your haraka config dir and then modify it:
+  Default: 500000
 
-```sh
-cp node_modules/haraka-plugin-template/config/template.ini config/template.ini
-$EDITOR config/template.ini
-```
+  Maximum size of messages (in bytes) to send to spamd.
+  Messages over this size will be skipped.
+
+- reject_threshold = N _optional_
+
+  Default: none (do not reject any mail)
+
+  SpamAssassin score at which the mail should be rejected.
+
+- relay_reject_threshold = N _optional_
+
+  Default: none
+
+  As above, except this threshold only applies to connections
+  that are relays (e.g. AUTH) where connection.relaying = true.
+  This is used to set a _lower_ thresold at which to reject mail
+  from these hosts to prevent sending outbound spam.
+
+  If this is not set, then the `reject_thresold` value is used.
+
+- munge_subject_threshold = N _optional_
+
+  Default: none (do not munge the subject)
+
+  Score at which the subject should be munged (prefixed).
+
+- subject_prefix = \[prefix\] _optional_
+
+  Default: **_ SPAM _**
+
+  Prefix to use when munging the subject.
+
+- old_headers_action = \[rename | drop | keep\] _optional_
+
+  Default: rename
+
+  If old X-Spam-\* headers are in the email, what do we do with them?
+
+  `rename` them to X-Old-Spam-\*.
+
+  `drop` will delete them.
+
+  `keep` will keep them (new X-Spam-\* headers appear lower down in
+  the headers then).
+
+- connect_timeout = N _optional_
+
+  Default: 30
+
+  Time in seconds to wait for a connection to spamd
+
+- results_timeout = N _optional_
+
+  Default: 300
+
+  Time in seconds to wait for results from spamd
+
+### [check]
+
+The optional check section can allow skipping SpamAssassin check for remote connection
+meeting following criteria.
+
+- authenticated
+
+  Default: true
+
+  If true, messages from authenticated users will be scored.
+
+- private_ip
+
+  Default: true
+
+  If true, messages from private IPs will be scored.
+
+- local_ip
+
+  Default: true
+
+  If true, messages from localhost will be scored.
+
+- relay
+
+  Default: true
+
+  If true, messages that are to be relayed will be scored.
+
+### [defer]
+
+The optional defer section can allow returning a DENYSOFT status back to the
+client. Setting these to true will force the client to retry later in cases where
+spamassassin is not responding properly. If set to false, then the errors
+will be ignored and message processing will continue.
+
+- error
+
+  Default: false
+
+  If true, return DENYSOFT on socket errors
+
+- connect_timeout
+
+  Default: false
+
+  If true, return DENYSOFT on socket connection timeouts
+
+- scan_timeout
+
+  Default: false
+
+  If true, return DENYSOFT on scan timeouts
+
+## Extras
+
+A SpamAssassin plugin can be found in the `contrib` directory.
+The `Haraka.\[pm|cf\]` files should be placed in the SpamAssassin local
+site rules directory (/etc/mail/spamassassin on Linux), spamd should be
+restarted and the plugin will make spamd output the Haraka UUID as part
+of its log output to aid debugging when searching the mail logs.
+
+## Changes
+
+This plugin now passes the X-Spam-\* headers generated by SA through
+unaltered. You can control the presence and appearance of X-Spam-\*
+headers by editing your SpamAssassin config.
+
+The default headers added by SpamAssassin are:
+
+    add_header all Checker-Version SpamAssassin _VERSION_ (_SUBVERSION_) on _HOSTNAME_
+    add_header spam Flag _YESNOCAPS_
+    add_header all Level _STARS(\*)_
+    add_header all Status "_YESNO_, score=_SCORE_ required=_REQD_ tests=_TESTS_ autolearn=_AUTOLEARN_ version=_VERSION_"
+
+Other headers options you might find interesting or useful are:
+
+    add_header all DCC _DCCB_: _DCCR_
+    add_header all Tests _TESTS_
 
 ## USAGE
 
-
 <!-- leave these buried at the bottom of the document -->
-[ci-img]: https://github.com/haraka/haraka-plugin-template/workflows/Plugin%20Tests/badge.svg
-[ci-url]: https://github.com/haraka/haraka-plugin-template/actions?query=workflow%3A%22Plugin+Tests%22
-[ci-win-img]: https://github.com/haraka/haraka-plugin-template/workflows/Plugin%20Tests%20-%20Windows/badge.svg
-[ci-win-url]: https://github.com/haraka/haraka-plugin-template/actions?query=workflow%3A%22Plugin+Tests+-+Windows%22
-[clim-img]: https://codeclimate.com/github/haraka/haraka-plugin-template/badges/gpa.svg
-[clim-url]: https://codeclimate.com/github/haraka/haraka-plugin-template
-[npm-img]: https://nodei.co/npm/haraka-plugin-template.png
-[npm-url]: https://www.npmjs.com/package/haraka-plugin-template
+
+[ci-img]: https://github.com/haraka/haraka-plugin-spamassassin/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/haraka/haraka-plugin-spamassassin/actions/workflows/ci.yml
+[clim-img]: https://codeclimate.com/github/haraka/haraka-plugin-spamassassin/badges/gpa.svg
+[clim-url]: https://codeclimate.com/github/haraka/haraka-plugin-spamassassin
+[npm-img]: https://nodei.co/npm/haraka-plugin-spamassassin.png
+[npm-url]: https://www.npmjs.com/package/haraka-plugin-spamassassin
