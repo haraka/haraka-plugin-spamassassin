@@ -1,7 +1,7 @@
 {
   "name": "haraka-plugin-spamassassin",
-  "version": "1.0.0",
-  "description": "Haraka plugin that...CHANGE THIS",
+  "version": "1.0.1",
+  "description": "Haraka plugin that scans messages with SpamAssassin",
   "main": "index.js",
   "files": [
     "CHANGELOG.md",
@@ -9,8 +9,8 @@
   ],
   "scripts": {
     "format": "npm run prettier:fix && npm run lint:fix",
-    "lint": "npx eslint@^8 *.js test",
-    "lint:fix": "npx eslint@^8 *.js test --fix",
+    "lint": "npx eslint *.js test",
+    "lint:fix": "npx eslint *.js test --fix",
     "prettier": "npx prettier . --check",
     "prettier:fix": "npx prettier . --write --log-level=warn",
     "test": "node --test",
@@ -33,12 +33,12 @@
   },
   "homepage": "https://github.com/haraka/haraka-plugin-spamassassin#readme",
   "dependencies": {
-    "haraka-net-utils": "^1.7.0",
+    "haraka-net-utils": "^1.7.1",
     "haraka-utils": "^1.1.3"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "1.1.3",
+    "@haraka/eslint-config": "2.0.2",
     "address-rfc2821": "^2.1.2",
-    "haraka-test-fixtures": "1.3.5"
+    "haraka-test-fixtures": "1.3.8"
   }
 }
