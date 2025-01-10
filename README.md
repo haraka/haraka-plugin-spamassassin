@@ -1,8 +1,6 @@
 [![CI Test Status][ci-img]][ci-url]
 [![Code Climate][clim-img]][clim-url]
 
-[![NPM][npm-img]][npm-url]
-
 # haraka-plugin-spamassassin
 
 This plugin implements the spamd protocol and will send messages to spamd for scoring.
@@ -188,5 +186,3 @@ Other headers options you might find interesting or useful are:
 [ci-url]: https://github.com/haraka/haraka-plugin-spamassassin/actions/workflows/ci.yml
 [clim-img]: https://codeclimate.com/github/haraka/haraka-plugin-spamassassin/badges/gpa.svg
 [clim-url]: https://codeclimate.com/github/haraka/haraka-plugin-spamassassin
-[npm-img]: https://nodei.co/npm/haraka-plugin-spamassassin.png
-[npm-url]: https://www.npmjs.com/package/haraka-plugin-spamassassin
