@@ -12,8 +12,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - repackaged from haraka/Haraka
 
-[1.0.0]: https://github.com/haraka/haraka-plugin-template/releases/tag/1.0.0
 [1.0.1]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.0.1
-[1.0.2]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/1.0.2
-[1.0.3]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/1.0.3
-[1.0.6]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.0.6
