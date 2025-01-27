@@ -1,6 +1,6 @@
 {
   "name": "haraka-plugin-spamassassin",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Haraka plugin that scans messages with SpamAssassin",
   "main": "index.js",
   "files": [
@@ -37,8 +37,12 @@
     "haraka-utils": "^1.1.3"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "2.0.2",
+    "@haraka/eslint-config": "^2.0.2",
     "address-rfc2821": "^2.1.2",
     "haraka-test-fixtures": "1.3.8"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "semi": false
   }
 }
