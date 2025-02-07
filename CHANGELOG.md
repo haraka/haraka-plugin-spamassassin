@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- results.flag: change from Yes/No to boolean
+- results.hits: deleted, alias for score
+- results.status: deleted, alias for flag
+
 ### [1.0.2] - 2025-01-26
 
 - prettier: move config into package.json

@@ -178,7 +178,6 @@ Other headers options you might find interesting or useful are:
     add_header all DCC _DCCB_: _DCCR_
     add_header all Tests _TESTS_
 
-## USAGE
 
 <!-- leave these buried at the bottom of the document -->
 
