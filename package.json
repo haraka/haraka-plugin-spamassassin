@@ -1,6 +1,6 @@
 {
   "name": "haraka-plugin-spamassassin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Haraka plugin that scans messages with SpamAssassin",
   "main": "index.js",
   "files": [
