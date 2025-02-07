@@ -82,11 +82,9 @@ exports.hook_data_post = function (next, connection) {
           /Spam: (True|False) ; (-?\d+\.\d) \/ (-?\d+\.\d)/,
         )
         if (matches) {
-          spamd_response.flag = matches[1]
+          spamd_response.flag = matches[1] === 'True'
           spamd_response.score = matches[2]
-          spamd_response.hits = matches[2] // backwards compat
           spamd_response.reqd = matches[3]
-          spamd_response.flag = spamd_response.flag === 'True' ? 'Yes' : 'No'
         }
       } else {
         state = 'headers'
@@ -131,7 +129,6 @@ exports.hook_data_post = function (next, connection) {
     txn.notes.spamassassin = spamd_response
     connection.results.add(this, {
       time: (Date.now() - start) / 1000,
-      hits: spamd_response.hits,
       flag: spamd_response.flag,
     })
 
@@ -197,7 +194,7 @@ exports.munge_subject = function (conn, score) {
 }
 
 exports.do_header_updates = function (conn, spamd_response) {
-  if (spamd_response.flag === 'Yes') {
+  if (spamd_response.flag) {
     // X-Spam-Flag is added by SpamAssassin
     conn.transaction.remove_header('precedence')
     conn.transaction.add_header('Precedence', 'junk')
@@ -342,7 +339,7 @@ exports.log_results = function (conn, spamd_response) {
     : cfg.reject_threshold
 
   const human_text =
-    `status=${spamd_response.flag}` +
+    `status=${spamd_response.flag ? 'Yes' : 'No'}` +
     `, score=${spamd_response.score}` +
     `, required=${spamd_response.reqd}` +
     `, reject=${reject_threshold}` +
@@ -350,7 +347,6 @@ exports.log_results = function (conn, spamd_response) {
 
   conn.transaction.results.add(this, {
     human: human_text,
-    status: spamd_response.flag,
     score: parseFloat(spamd_response.score),
     required: parseFloat(spamd_response.reqd),
     reject: reject_threshold,
