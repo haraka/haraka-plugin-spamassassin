@@ -1,6 +1,8 @@
 'use strict'
 const assert = require('node:assert')
-const { beforeEach, describe, it } = require('node:test')
+const net = require('node:net')
+const { PassThrough } = require('node:stream')
+const { afterEach, beforeEach, describe, it } = require('node:test')
 
 const Address = require('address-rfc2821')
 const fixtures = require('haraka-test-fixtures')
@@ -170,6 +172,68 @@ describe('spamassassin', () => {
         'spam score exceeded relay threshold',
         this.plugin.score_too_high(this.connection, { score: 8 }),
       )
+    })
+  })
+
+  // Regression for haraka/message-stream#22.
+  describe('socket error cleanup', () => {
+    let server
+
+    beforeEach((t, done) => {
+      this.plugin = new fixtures.plugin('spamassassin')
+      this.plugin.register()
+      this.connection = fixtures.connection.createConnection()
+      this.connection.init_transaction()
+      const txn = this.connection.transaction
+      txn.mail_from = new Address.Address('<m@example.com>')
+      txn.rcpt_to = [new Address.Address('<r@example.com>')]
+      txn.uuid = 'TEST-UUID'
+      txn.message_stream.add_line('Header: 1\r\n')
+      txn.message_stream.add_line('\r\n')
+      txn.message_stream.add_line('Body\r\n')
+      txn.message_stream.add_line_end(done)
+    })
+
+    afterEach((t, done) => {
+      if (server) server.close(done)
+      else done()
+    })
+
+    it('hook_data_post unpipes message_stream when spamd drops the connection', (t, done) => {
+      // Fake spamd that accepts then immediately destroys.
+      server = net.createServer((s) => s.destroy())
+      server.listen(0, '127.0.0.1', () => {
+        this.plugin.cfg.main.spamd_socket = `127.0.0.1:${server.address().port}`
+        this.plugin.cfg.defer = {}
+
+        this.plugin.hook_data_post(() => {
+          // After plugin returns, a second pipe must succeed — proves
+          // message_stream is no longer "currently piping".
+          const dest = new PassThrough()
+          dest.resume()
+          assert.doesNotThrow(
+            () => this.connection.transaction.message_stream.pipe(dest),
+            'message_stream must be free for re-pipe after socket error',
+          )
+          done()
+        }, this.connection)
+      })
+    })
+
+    it('next() is invoked only once even if error and close both fire', (t, done) => {
+      server = net.createServer((s) => s.destroy())
+      server.listen(0, '127.0.0.1', () => {
+        this.plugin.cfg.main.spamd_socket = `127.0.0.1:${server.address().port}`
+        this.plugin.cfg.defer = {}
+        let calls = 0
+        this.plugin.hook_data_post(() => {
+          calls++
+        }, this.connection)
+        setTimeout(() => {
+          assert.equal(calls, 1, `next() called ${calls} times, expected 1`)
+          done()
+        }, 100)
+      })
     })
   })
 })

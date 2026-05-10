@@ -137,11 +137,11 @@ exports.hook_data_post = function (next, connection) {
     this.log_results(connection, spamd_response)
 
     const exceeds_err = this.score_too_high(connection, spamd_response)
-    if (exceeds_err) return next(DENY, exceeds_err)
+    if (exceeds_err) return socket.nextOnce(DENY, exceeds_err)
 
     this.munge_subject(connection, spamd_response.score)
 
-    next()
+    socket.nextOnce()
   })
 }
 
@@ -282,6 +282,19 @@ exports.get_spamd_socket = function (next, conn, headers) {
   net_utils.add_line_processor(socket)
   const results_timeout = parseInt(plugin.cfg.main.results_timeout) || 300
 
+  // Idempotent terminal handler; exposed on the socket so hook_data_post's
+  // 'end' handler shares the guard. unpipe() before destroy() — see
+  // haraka/message-stream#22.
+  let calledNext = false
+  socket.nextOnce = function (code, msg) {
+    if (txn?.message_stream) txn.message_stream.unpipe()
+    if (!socket.destroyed) socket.destroy()
+    if (calledNext) return
+    calledNext = true
+    if (code) return next(code, msg)
+    return next()
+  }
+
   socket.on('connect', function () {
     // Abort if the transaction is gone
     if (!txn) {
@@ -298,24 +311,23 @@ exports.get_spamd_socket = function (next, conn, headers) {
   })
 
   socket.on('error', (err) => {
-    socket.destroy()
     if (txn) txn.results.add(plugin, { err: `socket error: ${err.message}` })
-    if (plugin.cfg.defer.error) return next(DENYSOFT, 'spamd scan error')
-    return next()
+    if (plugin.cfg.defer.error)
+      return socket.nextOnce(DENYSOFT, 'spamd scan error')
+    return socket.nextOnce()
   })
 
   socket.on('timeout', function () {
-    socket.destroy()
     if (!this.is_connected) {
       if (txn) txn.results.add(plugin, { err: `socket connect timeout` })
       if (plugin.cfg.defer.connect_timeout)
-        return next(DENYSOFT, 'spamd connect timeout')
+        return socket.nextOnce(DENYSOFT, 'spamd connect timeout')
     } else {
       if (txn) txn.results.add(plugin, { err: `timeout waiting for results` })
       if (plugin.cfg.defer.scan_timeout)
-        return next(DENYSOFT, 'spamd scan timeout')
+        return socket.nextOnce(DENYSOFT, 'spamd scan timeout')
     }
-    return next()
+    return socket.nextOnce()
   })
 
   const connect_timeout = parseInt(plugin.cfg.main.connect_timeout) || 30
