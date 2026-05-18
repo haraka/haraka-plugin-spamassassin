@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+### [1.1.0] - 2026-05-17
+
+
 ### [1.0.4] - 2026-05-10
 
 - fix: cleanup message pipe if spamd errors
@@ -34,3 +37,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.0.0]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/1.0.0
 [1.0.3]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.0.3
 [1.0.4]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.0.4
+[1.1.0]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.1.0

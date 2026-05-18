@@ -1,6 +1,6 @@
 {
   "name": "haraka-plugin-spamassassin",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Haraka plugin that scans messages with SpamAssassin",
   "main": "index.js",
   "files": [
@@ -16,7 +16,8 @@
     "test": "node --test",
     "versions": "npx npm-dep-mgr check",
     "versions:fix": "npx npm-dep-mgr update",
-    "test:coverage": "npx c8 --reporter=text --reporter=text-summary npm test"
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=package.json --test-coverage-exclude=test/*.js",
+    "test:coverage:lcov": "mkdir -p coverage && node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.js"
   },
   "repository": {
     "type": "git",
@@ -39,7 +40,7 @@
   },
   "devDependencies": {
     "@haraka/eslint-config": "^2.0.4",
-    "address-rfc2821": "^2.1.5",
+    "@haraka/email-address": "^3.1.2",
     "haraka-test-fixtures": "^1.4.3"
   },
   "prettier": {
