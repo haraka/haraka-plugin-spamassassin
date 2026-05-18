@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### [1.1.0] - 2026-05-17
 
 - changed: dep address-rfc2821 -> @haraka/email-address
+- changed: bumped all dep versions to latest
 
 ### [1.0.4] - 2026-05-10
 
