@@ -4,7 +4,7 @@ const net = require('node:net')
 const { PassThrough } = require('node:stream')
 const { afterEach, beforeEach, describe, it } = require('node:test')
 
-const Address = require('@haraka/email-address')
+const { Address } = require('@haraka/email-address')
 const fixtures = require('haraka-test-fixtures')
 
 const _set_up = (t, done) => {
@@ -68,9 +68,7 @@ describe('spamassassin', () => {
 
   describe('get_spamd_headers', () => {
     it('returns a spamd protocol request', () => {
-      this.connection.transaction.mail_from = new Address.Address(
-        '<matt@example.com>',
-      )
+      this.connection.transaction.mail_from = new Address('<matt@example.com>')
       this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID'
       const headers = this.plugin.get_spamd_headers(
         this.connection,
@@ -91,9 +89,7 @@ describe('spamassassin', () => {
     beforeEach(_set_up)
 
     it('returns a spamd protocol request when relaying', () => {
-      this.connection.transaction.mail_from = new Address.Address(
-        '<matt@example.com>',
-      )
+      this.connection.transaction.mail_from = new Address('<matt@example.com>')
       this.connection.transaction.uuid = 'THIS-IS-A-TEST-UUID'
       this.connection.set('relaying', true)
       const headers = this.plugin.get_spamd_headers(
@@ -131,9 +127,7 @@ describe('spamassassin', () => {
 
     it('set to first-recipient', () => {
       this.plugin.cfg.main.spamd_user = 'first-recipient'
-      this.connection.transaction.rcpt_to = [
-        new Address.Address('<matt@example.com>'),
-      ]
+      this.connection.transaction.rcpt_to = [new Address('<matt@example.com>')]
       assert.equal(
         'matt@example.com',
         this.plugin.get_spamd_username(this.connection),
@@ -185,8 +179,8 @@ describe('spamassassin', () => {
       this.connection = fixtures.connection.createConnection()
       this.connection.init_transaction()
       const txn = this.connection.transaction
-      txn.mail_from = new Address.Address('<m@example.com>')
-      txn.rcpt_to = [new Address.Address('<r@example.com>')]
+      txn.mail_from = new Address('<m@example.com>')
+      txn.rcpt_to = [new Address('<r@example.com>')]
       txn.uuid = 'TEST-UUID'
       txn.message_stream.add_line('Header: 1\r\n')
       txn.message_stream.add_line('\r\n')
@@ -422,8 +416,8 @@ describe('spamassassin', () => {
       this.connection = fixtures.connection.createConnection()
       this.connection.init_transaction()
       const txn = this.connection.transaction
-      txn.mail_from = new Address.Address('<m@example.com>')
-      txn.rcpt_to = [new Address.Address('<r@example.com>')]
+      txn.mail_from = new Address('<m@example.com>')
+      txn.rcpt_to = [new Address('<r@example.com>')]
       txn.uuid = 'TEST-UUID'
       txn.add_header('Subject', 'cheap pills')
       txn.message_stream.add_line('Subject: cheap pills\r\n')
