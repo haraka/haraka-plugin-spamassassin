@@ -5,10 +5,10 @@ const { PassThrough } = require('node:stream')
 const { afterEach, beforeEach, describe, it } = require('node:test')
 
 const { Address } = require('@haraka/email-address')
-const fixtures = require('haraka-test-fixtures')
+const { makeConnection, makePlugin } = require('haraka-test-fixtures')
 
 const _set_up = (t, done) => {
-  this.plugin = new fixtures.plugin('spamassassin')
+  this.plugin = makePlugin('spamassassin', { register: false })
   this.plugin.cfg = {
     main: {
       spamc_auth_header: 'X-Haraka-Relaying123',
@@ -16,8 +16,7 @@ const _set_up = (t, done) => {
     check: {},
   }
 
-  this.connection = fixtures.connection.createConnection()
-  this.connection.init_transaction()
+  this.connection = makeConnection({ withTxn: true })
 
   done()
 }
@@ -174,9 +173,9 @@ describe('spamassassin', () => {
     let server
 
     beforeEach((t, done) => {
-      this.plugin = new fixtures.plugin('spamassassin')
+      this.plugin = makePlugin('spamassassin', { register: false })
       this.plugin.register()
-      this.connection = fixtures.connection.createConnection()
+      this.connection = makeConnection()
       this.connection.init_transaction()
       const txn = this.connection.transaction
       txn.mail_from = new Address('<m@example.com>')
@@ -411,9 +410,9 @@ describe('spamassassin', () => {
     }
 
     const primeTxn = (done) => {
-      this.plugin = new fixtures.plugin('spamassassin')
+      this.plugin = makePlugin('spamassassin', { register: false })
       this.plugin.register()
-      this.connection = fixtures.connection.createConnection()
+      this.connection = makeConnection()
       this.connection.init_transaction()
       const txn = this.connection.transaction
       txn.mail_from = new Address('<m@example.com>')

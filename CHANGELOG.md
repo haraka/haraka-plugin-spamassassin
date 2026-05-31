@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
+- fix(spamd_socket): support `[ipv6]:port` via net_utils.endpoint
+- deps(dev): bump haraka-test-fixtures to ^1.7.0
+
 ### [1.1.0] - 2026-05-17
 
 - changed: dep address-rfc2821 -> @haraka/email-address

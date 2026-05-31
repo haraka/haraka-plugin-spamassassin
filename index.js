@@ -333,12 +333,12 @@ exports.get_spamd_socket = function (next, conn, headers) {
   const connect_timeout = parseInt(plugin.cfg.main.connect_timeout) || 30
   socket.setTimeout(connect_timeout * 1000)
 
-  if (plugin.cfg.main.spamd_socket.match(/\//)) {
-    // assume unix socket
-    socket.connect(plugin.cfg.main.spamd_socket)
+  const ep = net_utils.endpoint(plugin.cfg.main.spamd_socket, 783)
+  if (ep instanceof Error) throw ep
+  if (ep.path) {
+    socket.connect(ep.path)
   } else {
-    const hostport = plugin.cfg.main.spamd_socket.split(/:/)
-    socket.connect(hostport[1] || 783, hostport[0])
+    socket.connect(ep.port, ep.host)
   }
 
   return socket
