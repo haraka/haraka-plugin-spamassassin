@@ -1,4 +1,5 @@
 [![CI Test Status][ci-img]][ci-url]
+[![Code Coverage][cov-img]][cov-url]
 [![Code Climate][clim-img]][clim-url]
 
 # haraka-plugin-spamassassin
@@ -183,5 +184,7 @@ Other headers options you might find interesting or useful are:
 
 [ci-img]: https://github.com/haraka/haraka-plugin-spamassassin/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/haraka/haraka-plugin-spamassassin/actions/workflows/ci.yml
-[clim-img]: https://codeclimate.com/github/haraka/haraka-plugin-spamassassin/badges/gpa.svg
-[clim-url]: https://codeclimate.com/github/haraka/haraka-plugin-spamassassin
+[cov-img]: https://codecov.io/github/haraka/haraka-plugin-spamassassin/coverage.svg
+[cov-url]: https://codecov.io/github/haraka/haraka-plugin-spamassassin
+[clim-img]: https://qlty.sh/gh/haraka/projects/haraka-plugin-spamassassin/maintainability.svg
+[clim-url]: https://qlty.sh/gh/haraka/projects/haraka-plugin-spamassassin
