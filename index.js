@@ -245,7 +245,7 @@ exports.get_spamd_username = function (conn) {
   // Enable per-user SA prefs
   if (user === 'first-recipient') {
     // special cases
-    return conn.transaction.rcpt_to[0].address()
+    return conn.transaction.rcpt_to[0].address
   }
   if (user === 'all-recipients') {
     throw 'Unimplemented'
@@ -263,7 +263,7 @@ exports.get_spamd_headers = function (conn, username) {
     'HEADERS SPAMC/1.4',
     `User: ${username}`,
     '',
-    `X-Envelope-From: ${conn.transaction.mail_from.address()}`,
+    `X-Envelope-From: ${conn.transaction.mail_from.address}`,
     `X-Haraka-UUID: ${conn.transaction.uuid}`,
   ]
   if (conn.relaying) {
