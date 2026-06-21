@@ -41,8 +41,8 @@
     "haraka-utils": "^2.1.0"
   },
   "devDependencies": {
-    "@haraka/eslint-config": "^3.0.0",
     "@haraka/email-address": "^3.1.5",
+    "@haraka/eslint-config": "^3.0.0",
     "haraka-test-fixtures": "^1.7.0"
   },
   "prettier": {
