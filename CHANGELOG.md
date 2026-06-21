@@ -4,8 +4,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Unreleased
 
-- fix(spamd_socket): support `[ipv6]:port` via net_utils.endpoint
+### [1.1.1] - 2026-06-20
+
+#### Fixed
+
+- fix(spamd_socket): support `[ipv6]:port` via net_utils.endpoint #7
 - deps(dev): bump haraka-test-fixtures to ^1.7.0
+- refactor: rename hook_data_post to spamassassin_data_post
+- split into reusable `parse_spamassassin` + `handle_spamassassin`
+  related to haraka/Haraka#3604
 
 ### [1.1.0] - 2026-05-17
 
@@ -43,3 +50,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 [1.0.3]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.0.3
 [1.0.4]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.0.4
 [1.1.0]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.1.0
+[1.1.1]: https://github.com/haraka/haraka-plugin-spamassassin/releases/tag/v1.1.1
