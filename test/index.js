@@ -479,3 +479,70 @@ describe('spamassassin', () => {
     })
   })
 })
+
+describe('parse_spamassassin', () => {
+  beforeEach(() => {
+    this.plugin = makePlugin('spamassassin', { register: false })
+    this.plugin.load_spamassassin_ini()
+  })
+
+  it('parses flag, score, required, and tests', () => {
+    const r = this.plugin.parse_spamassassin(
+      'SPAMD/1.1 0 EX_OK\r\n' +
+        'Spam: True ; 12.3 / 5.0\r\n' +
+        '\r\n' +
+        'X-Spam-Status: Yes, score=12.3 required=5.0 ' +
+        'tests=BAYES_99,HTML_MESSAGE autolearn=no\r\n',
+    )
+    assert.equal(r.flag, true)
+    assert.equal(r.score, '12.3')
+    assert.equal(r.reqd, '5.0')
+    assert.equal(r.tests, 'BAYES_99,HTML_MESSAGE')
+  })
+
+  it('parses a ham verdict', () => {
+    const r = this.plugin.parse_spamassassin(
+      'SPAMD/1.1 0 EX_OK\r\nSpam: False ; 0.1 / 5.0\r\n\r\n',
+    )
+    assert.equal(r.flag, false)
+    assert.equal(r.score, '0.1')
+  })
+
+  it('prefers the Tests header for the tests list', () => {
+    const r = this.plugin.parse_spamassassin(
+      'SPAMD/1.1 0 EX_OK\r\n' +
+        'Spam: True ; 9.0 / 5.0\r\n' +
+        '\r\n' +
+        'X-Spam-Tests: A, B, C\r\n',
+    )
+    assert.equal(r.tests, 'A,B,C')
+  })
+})
+
+describe('handle_spamassassin', () => {
+  beforeEach(() => {
+    this.plugin = makePlugin('spamassassin', { register: false })
+    this.plugin.load_spamassassin_ini()
+    this.connection = makeConnection({ withTxn: true })
+  })
+
+  it('DENYs when the score exceeds reject_threshold', () => {
+    this.plugin.cfg.main.reject_threshold = 5
+    const r = this.plugin.parse_spamassassin(
+      'SPAMD/1.1 0 EX_OK\r\nSpam: True ; 12.3 / 5.0\r\n\r\n',
+    )
+    const [code] = this.plugin.handle_spamassassin(this.connection, r)
+    assert.equal(code, DENY)
+    assert.equal(this.connection.transaction.notes.spamassassin.flag, true)
+  })
+
+  it('accepts under threshold and records the result', () => {
+    this.plugin.cfg.main.reject_threshold = 5
+    const r = this.plugin.parse_spamassassin(
+      'SPAMD/1.1 0 EX_OK\r\nSpam: False ; 0.1 / 5.0\r\n\r\n',
+    )
+    const args = this.plugin.handle_spamassassin(this.connection, r)
+    assert.deepEqual(args, [])
+    assert.equal(this.connection.transaction.notes.spamassassin.flag, false)
+  })
+})

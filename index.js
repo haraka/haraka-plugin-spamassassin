@@ -78,7 +78,7 @@ exports.spamassassin_data_post = function (next, connection) {
   })
 
   socket.once('end', () => {
-    if (!connection.transaction) return next() // client gone
+    if (!connection.transaction) return socket.nextOnce() // client gone
     const spamd_response = this.parse_spamassassin(lines.join('\n'))
     socket.nextOnce(
       ...this.handle_spamassassin(connection, spamd_response, start),
