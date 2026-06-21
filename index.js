@@ -8,6 +8,10 @@ const net_utils = require('haraka-net-utils')
 
 exports.register = function () {
   this.load_spamassassin_ini()
+  // explicit hook (not magic hook_data_post) so the plugin can be inherited;
+  // don't rename. guarded so inheritors don't re-register. haraka/Haraka#3604
+  if (this.name === 'spamassassin')
+    this.register_hook('data_post', 'spamassassin_data_post')
 }
 
 exports.load_spamassassin_ini = function () {
@@ -55,7 +59,7 @@ exports.load_spamassassin_ini = function () {
   }
 }
 
-exports.hook_data_post = function (next, connection) {
+exports.spamassassin_data_post = function (next, connection) {
   if (this.should_skip(connection)) return next()
 
   const txn = connection.transaction
@@ -65,14 +69,30 @@ exports.hook_data_post = function (next, connection) {
   const headers = this.get_spamd_headers(connection, username)
   const socket = this.get_spamd_socket(next, connection, headers)
 
-  const spamd_response = { headers: {} }
-  let state = 'line0'
-  let last_header
+  const lines = []
   const start = Date.now()
 
   socket.on('line', (line) => {
-    connection.logprotocol(this, `Spamd C: ${line} state=${state}`)
-    line = line.replace(/\r?\n/, '')
+    connection.logprotocol(this, `Spamd C: ${line}`)
+    lines.push(line.replace(/\r?\n/, ''))
+  })
+
+  socket.once('end', () => {
+    if (!connection.transaction) return next() // client gone
+    const spamd_response = this.parse_spamassassin(lines.join('\n'))
+    socket.nextOnce(
+      ...this.handle_spamassassin(connection, spamd_response, start),
+    )
+  })
+}
+
+// parse a raw spamd response into a result object. reusable by inheriting
+// plugins (e.g. @haraka/plugin-ecsd). See haraka/Haraka#3604.
+exports.parse_spamassassin = function (raw) {
+  const spamd_response = { headers: {} }
+  let state = 'line0'
+  let last_header
+  for (const line of String(raw).split(/\r?\n/)) {
     if (state === 'line0') {
       spamd_response.line0 = line
       state = 'response'
@@ -92,57 +112,59 @@ exports.hook_data_post = function (next, connection) {
     } else if (state === 'headers') {
       const m = line.match(/^X-Spam-([\x21-\x39\x3B-\x7E]+):\s*(.*)/)
       if (m) {
-        connection.logdebug(this, `header: ${line}`)
         last_header = m[1]
         spamd_response.headers[m[1]] = m[2]
-        return
+        continue
       }
       let fold
       if (last_header && (fold = line.match(/^(\s+.*)/))) {
         spamd_response.headers[last_header] += `\r\n${fold[1]}`
-        return
+        continue
       }
       last_header = ''
     }
+  }
+  extract_tests(spamd_response)
+  return spamd_response
+}
+
+function extract_tests(spamd_response) {
+  if (spamd_response.headers?.Tests) {
+    spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '')
+    return
+  }
+  // SpamAssassin omits a space before autolearn= on folded header lines, so
+  // don't match autolearn onwards.
+  if (spamd_response.headers?.Status) {
+    const tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
+      spamd_response.headers.Status.replace(/\r?\n\t/g, ''),
+    )
+    if (tests) spamd_response.tests = tests[1]
+  }
+}
+
+// handle a parsed spamd response (annotate + headers + reject decision).
+// I/O-free so inheriting plugins can reuse it; returns next() args ([] = CONT).
+// See haraka/Haraka#3604.
+exports.handle_spamassassin = function (connection, spamd_response, start) {
+  const txn = connection.transaction
+  if (!txn) return []
+
+  txn.notes.spamassassin = spamd_response
+  connection.results.add(this, {
+    time: start === undefined ? undefined : (Date.now() - start) / 1000,
+    flag: spamd_response.flag,
   })
 
-  socket.once('end', () => {
-    if (!connection.transaction) return next() // client gone
+  this.fixup_old_headers(txn)
+  this.do_header_updates(connection, spamd_response)
+  this.log_results(connection, spamd_response)
 
-    if (spamd_response.headers?.Tests) {
-      spamd_response.tests = spamd_response.headers.Tests.replace(/\s/g, '')
-    }
-    if (spamd_response.tests === undefined) {
-      // strip the 'tests' from the X-Spam-Status header
-      if (spamd_response.headers?.Status) {
-        // SpamAssassin appears to have a bug that causes a space not to
-        // be added before autolearn= when the header line has been folded.
-        // So we modify the regexp here not to match autolearn onwards.
-        const tests = /tests=((?:(?!autolearn)[^ ])+)/.exec(
-          spamd_response.headers.Status.replace(/\r?\n\t/g, ''),
-        )
-        if (tests) spamd_response.tests = tests[1]
-      }
-    }
+  const exceeds_err = this.score_too_high(connection, spamd_response)
+  if (exceeds_err) return [DENY, exceeds_err]
 
-    // do stuff with the results...
-    txn.notes.spamassassin = spamd_response
-    connection.results.add(this, {
-      time: (Date.now() - start) / 1000,
-      flag: spamd_response.flag,
-    })
-
-    this.fixup_old_headers(txn)
-    this.do_header_updates(connection, spamd_response)
-    this.log_results(connection, spamd_response)
-
-    const exceeds_err = this.score_too_high(connection, spamd_response)
-    if (exceeds_err) return socket.nextOnce(DENY, exceeds_err)
-
-    this.munge_subject(connection, spamd_response.score)
-
-    socket.nextOnce()
-  })
+  this.munge_subject(connection, spamd_response.score)
+  return []
 }
 
 exports.fixup_old_headers = function (txn) {

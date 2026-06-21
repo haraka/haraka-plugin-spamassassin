@@ -192,14 +192,14 @@ describe('spamassassin', () => {
       else done()
     })
 
-    it('hook_data_post unpipes message_stream when spamd drops the connection', (t, done) => {
+    it('spamassassin_data_post unpipes message_stream when spamd drops the connection', (t, done) => {
       // Fake spamd that accepts then immediately destroys.
       server = net.createServer((s) => s.destroy())
       server.listen(0, '127.0.0.1', () => {
         this.plugin.cfg.main.spamd_socket = `127.0.0.1:${server.address().port}`
         this.plugin.cfg.defer = {}
 
-        this.plugin.hook_data_post(() => {
+        this.plugin.spamassassin_data_post(() => {
           // After plugin returns, a second pipe must succeed — proves
           // message_stream is no longer "currently piping".
           const dest = new PassThrough()
@@ -219,7 +219,7 @@ describe('spamassassin', () => {
         this.plugin.cfg.main.spamd_socket = `127.0.0.1:${server.address().port}`
         this.plugin.cfg.defer = {}
         let calls = 0
-        this.plugin.hook_data_post(() => {
+        this.plugin.spamassassin_data_post(() => {
           calls++
         }, this.connection)
         setTimeout(() => {
@@ -398,7 +398,7 @@ describe('spamassassin', () => {
     })
   })
 
-  describe('hook_data_post (full spamd exchange)', () => {
+  describe('spamassassin_data_post (full spamd exchange)', () => {
     let server
 
     const startSpamd = (payload, cb) => {
@@ -443,7 +443,7 @@ describe('spamassassin', () => {
           this.plugin.cfg.main.spamd_socket = `127.0.0.1:${port}`
           this.plugin.cfg.main.reject_threshold = 5
           this.plugin.cfg.defer = {}
-          this.plugin.hook_data_post((code) => {
+          this.plugin.spamassassin_data_post((code) => {
             assert.equal(code, DENY)
             const sa = this.connection.transaction.notes.spamassassin
             assert.equal(sa.flag, true)
@@ -466,7 +466,7 @@ describe('spamassassin', () => {
           this.plugin.cfg.main.spamd_socket = `127.0.0.1:${port}`
           this.plugin.cfg.main.reject_threshold = 5
           this.plugin.cfg.defer = {}
-          this.plugin.hook_data_post((code) => {
+          this.plugin.spamassassin_data_post((code) => {
             assert.equal(code, undefined)
             assert.equal(
               this.connection.transaction.notes.spamassassin.flag,
