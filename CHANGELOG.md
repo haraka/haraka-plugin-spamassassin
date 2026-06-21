@@ -6,8 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### [1.1.1] - 2026-06-20
 
-#### Fixed
-
 - fix(spamd_socket): support `[ipv6]:port` via net_utils.endpoint #7
 - deps(dev): bump haraka-test-fixtures to ^1.7.0
 - refactor: rename hook_data_post to spamassassin_data_post
